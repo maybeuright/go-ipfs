@@ -8,6 +8,8 @@ TEST_SHORT :=
 all: help    # all has to be first defined target
 .PHONY: all
 
+include mk/git.mk # has to be before tarball.mk
+include mk/tarball.mk
 include mk/util.mk
 include mk/golang.mk
 include mk/gx.mk
@@ -45,16 +47,7 @@ ifneq ($(filter coverage% clean distclean,$(MAKECMDGOALS)),)
 	include $(dir)/Rules.mk
 endif
 
-dir := namesys/pb
-include $(dir)/Rules.mk
-
 dir := unixfs/pb
-include $(dir)/Rules.mk
-
-dir := merkledag/pb
-include $(dir)/Rules.mk
-
-dir := exchange/bitswap/message/pb
 include $(dir)/Rules.mk
 
 dir := pin/internal/pb

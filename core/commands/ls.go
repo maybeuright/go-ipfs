@@ -6,20 +6,21 @@ import (
 	"io"
 	"text/tabwriter"
 
-	blockservice "github.com/ipfs/go-ipfs/blockservice"
 	cmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
-	offline "github.com/ipfs/go-ipfs/exchange/offline"
-	merkledag "github.com/ipfs/go-ipfs/merkledag"
 	path "github.com/ipfs/go-ipfs/path"
 	resolver "github.com/ipfs/go-ipfs/path/resolver"
 	unixfs "github.com/ipfs/go-ipfs/unixfs"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 	unixfspb "github.com/ipfs/go-ipfs/unixfs/pb"
+	blockservice "gx/ipfs/QmNqRBAhovtf4jVd5cF7YvHaFSsQHHZBaUFwGQWPM2CV7R/go-blockservice"
+	merkledag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	offline "gx/ipfs/QmS6mo1dPpHdYsVkm27BRZDLxpKBCiJKUH8fHX15XFfMez/go-ipfs-exchange-offline"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 type LsLink struct {
@@ -134,23 +135,28 @@ The JSON output contains type information.
 			for j, link := range links {
 				t := unixfspb.Data_DataType(-1)
 
-				linkNode, err := link.GetNode(req.Context(), dserv)
-				if err == ipld.ErrNotFound && !resolve {
-					// not an error
-					linkNode = nil
-				} else if err != nil {
-					res.SetError(err, cmdkit.ErrNormal)
-					return
-				}
-
-				if pn, ok := linkNode.(*merkledag.ProtoNode); ok {
-					d, err := unixfs.FromBytes(pn.Data())
-					if err != nil {
+				switch link.Cid.Type() {
+				case cid.Raw:
+					// No need to check with raw leaves
+					t = unixfspb.Data_File
+				case cid.DagProtobuf:
+					linkNode, err := link.GetNode(req.Context(), dserv)
+					if err == ipld.ErrNotFound && !resolve {
+						// not an error
+						linkNode = nil
+					} else if err != nil {
 						res.SetError(err, cmdkit.ErrNormal)
 						return
 					}
 
-					t = d.GetType()
+					if pn, ok := linkNode.(*merkledag.ProtoNode); ok {
+						d, err := unixfs.FromBytes(pn.Data())
+						if err != nil {
+							res.SetError(err, cmdkit.ErrNormal)
+							return
+						}
+						t = d.GetType()
+					}
 				}
 				output[i].Links[j] = LsLink{
 					Name: link.Name,

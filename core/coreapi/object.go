@@ -13,20 +13,17 @@ import (
 
 	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
 	caopts "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	dag "github.com/ipfs/go-ipfs/merkledag"
-	dagutils "github.com/ipfs/go-ipfs/merkledag/utils"
+	"github.com/ipfs/go-ipfs/dagutils"
 	ft "github.com/ipfs/go-ipfs/unixfs"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 )
 
 const inputLimit = 2 << 20
 
-type ObjectAPI struct {
-	*CoreAPI
-	*caopts.ObjectOptions
-}
+type ObjectAPI CoreAPI
 
 type Link struct {
 	Name, Hash string
@@ -59,7 +56,7 @@ func (api *ObjectAPI) New(ctx context.Context, opts ...caopts.ObjectNewOption) (
 	return n, nil
 }
 
-func (api *ObjectAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.ObjectPutOption) (coreiface.Path, error) {
+func (api *ObjectAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.ObjectPutOption) (coreiface.ResolvedPath, error) {
 	options, err := caopts.ObjectPutOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -124,7 +121,7 @@ func (api *ObjectAPI) Put(ctx context.Context, src io.Reader, opts ...caopts.Obj
 		return nil, err
 	}
 
-	return ParseCid(dagnode.Cid()), nil
+	return coreiface.IpfsPath(dagnode.Cid()), nil
 }
 
 func (api *ObjectAPI) Get(ctx context.Context, path coreiface.Path) (ipld.Node, error) {
@@ -183,7 +180,7 @@ func (api *ObjectAPI) Stat(ctx context.Context, path coreiface.Path) (*coreiface
 	return out, nil
 }
 
-func (api *ObjectAPI) AddLink(ctx context.Context, base coreiface.Path, name string, child coreiface.Path, opts ...caopts.ObjectAddLinkOption) (coreiface.Path, error) {
+func (api *ObjectAPI) AddLink(ctx context.Context, base coreiface.Path, name string, child coreiface.Path, opts ...caopts.ObjectAddLinkOption) (coreiface.ResolvedPath, error) {
 	options, err := caopts.ObjectAddLinkOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -221,10 +218,10 @@ func (api *ObjectAPI) AddLink(ctx context.Context, base coreiface.Path, name str
 		return nil, err
 	}
 
-	return ParseCid(nnode.Cid()), nil
+	return coreiface.IpfsPath(nnode.Cid()), nil
 }
 
-func (api *ObjectAPI) RmLink(ctx context.Context, base coreiface.Path, link string) (coreiface.Path, error) {
+func (api *ObjectAPI) RmLink(ctx context.Context, base coreiface.Path, link string) (coreiface.ResolvedPath, error) {
 	baseNd, err := api.core().ResolveNode(ctx, base)
 	if err != nil {
 		return nil, err
@@ -247,18 +244,18 @@ func (api *ObjectAPI) RmLink(ctx context.Context, base coreiface.Path, link stri
 		return nil, err
 	}
 
-	return ParseCid(nnode.Cid()), nil
+	return coreiface.IpfsPath(nnode.Cid()), nil
 }
 
-func (api *ObjectAPI) AppendData(ctx context.Context, path coreiface.Path, r io.Reader) (coreiface.Path, error) {
+func (api *ObjectAPI) AppendData(ctx context.Context, path coreiface.Path, r io.Reader) (coreiface.ResolvedPath, error) {
 	return api.patchData(ctx, path, r, true)
 }
 
-func (api *ObjectAPI) SetData(ctx context.Context, path coreiface.Path, r io.Reader) (coreiface.Path, error) {
+func (api *ObjectAPI) SetData(ctx context.Context, path coreiface.Path, r io.Reader) (coreiface.ResolvedPath, error) {
 	return api.patchData(ctx, path, r, false)
 }
 
-func (api *ObjectAPI) patchData(ctx context.Context, path coreiface.Path, r io.Reader, appendData bool) (coreiface.Path, error) {
+func (api *ObjectAPI) patchData(ctx context.Context, path coreiface.Path, r io.Reader, appendData bool) (coreiface.ResolvedPath, error) {
 	nd, err := api.core().ResolveNode(ctx, path)
 	if err != nil {
 		return nil, err
@@ -284,11 +281,11 @@ func (api *ObjectAPI) patchData(ctx context.Context, path coreiface.Path, r io.R
 		return nil, err
 	}
 
-	return ParseCid(pbnd.Cid()), nil
+	return coreiface.IpfsPath(pbnd.Cid()), nil
 }
 
 func (api *ObjectAPI) core() coreiface.CoreAPI {
-	return api.CoreAPI
+	return (*CoreAPI)(api)
 }
 
 func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error) {
@@ -303,7 +300,7 @@ func deserializeNode(nd *Node, dataFieldEncoding string) (*dag.ProtoNode, error)
 		}
 		dagnode.SetData(data)
 	default:
-		return nil, fmt.Errorf("Unkown data field encoding")
+		return nil, fmt.Errorf("unkown data field encoding")
 	}
 
 	links := make([]*ipld.Link, len(nd.Links))

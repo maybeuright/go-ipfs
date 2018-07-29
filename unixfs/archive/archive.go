@@ -11,7 +11,7 @@ import (
 	tar "github.com/ipfs/go-ipfs/unixfs/archive/tar"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
 
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 )
 
 // DefaultBufSize is the buffer size for gets. for now, 1MB, which is ~4 blocks.
@@ -82,7 +82,7 @@ func DagArchive(ctx context.Context, nd ipld.Node, name string, dag ipld.DAGServ
 		// the case for 1. archive, and 2. not archived and not compressed, in which tar is used anyway as a transport format
 
 		// construct the tar writer
-		w, err := tar.NewWriter(ctx, dag, archive, compression, maybeGzw)
+		w, err := tar.NewWriter(ctx, dag, maybeGzw)
 		if checkErrAndClosePipe(err) {
 			return nil, err
 		}

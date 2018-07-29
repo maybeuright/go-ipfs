@@ -28,6 +28,7 @@ Please put all issues regarding the Go IPFS _implementation_ in [this repo](http
 
 - [Security Issues](#security-issues)
 - [Install](#install)
+  - [System Requirements](#system-requirements)
   - [Install prebuilt packages](#install-prebuilt-packages)
   - [From Linux package managers](#from-linux-package-managers)
   - [Build from Source](#build-from-source)
@@ -41,7 +42,6 @@ Please put all issues regarding the Go IPFS _implementation_ in [this repo](http
   - [Some things to try](#some-things-to-try)
   - [Docker usage](#docker-usage)
   - [Troubleshooting](#troubleshooting-1)
-- [Todo](#todo)
 - [Contributing](#contributing)
   - [Want to hack on IPFS?](#want-to-hack-on-ipfs)
   - [Want to read our code?](#want-to-read-our-code)
@@ -59,6 +59,10 @@ If the issue is a protocol weakness that cannot be immediately exploited or some
 
 The canonical download instructions for IPFS are over at: http://ipfs.io/docs/install/. It is **highly suggested** you follow those instructions if you are not interested in working on IPFS development.
 
+### System Requirements
+
+IPFS can run on most Linux, macOS, and Windows systems. We recommend running it on a machine with at least 2 GB of RAM (it’ll do fine with only one CPU core), but it should run fine with as little as 1 GB of RAM. On systems with less memory, it may not be completely stable.
+
 ### Install prebuilt packages
 
 We host prebuilt binaries over at our [distributions page](https://ipfs.io/ipns/dist.ipfs.io#go-ipfs).
@@ -67,6 +71,8 @@ From there:
 - Click the blue "Download go-ipfs" on the right side of the page.
 - Open/extract the archive.
 - Move `ipfs` to your path (`install.sh` can do it for you).
+
+You can also download go-ipfs from this project's GitHub releases page if you are unable to access ipfs.io.
 
 ### From Linux package managers
 
@@ -104,7 +110,7 @@ With snap, in any of the [supported Linux distributions](https://snapcraft.io/do
 
 #### Install Go
 
-The build process for ipfs requires Go 1.9 or higher. If you don't have it: [Download Go 1.9+](https://golang.org/dl/).
+The build process for ipfs requires Go 1.10 or higher. If you don't have it: [Download Go 1.10+](https://golang.org/dl/).
 
 
 You'll need to add Go's bin directories to your `$PATH` environment variable e.g., by adding these lines to your `/etc/profile` (for a system-wide installation) or `$HOME/.profile`:
@@ -148,7 +154,7 @@ mismatched APIs.
 * Also, [instructions for OpenBSD](docs/openbsd.md).
 * `git` is required in order for `go get` to fetch all dependencies.
 * Package managers often contain out-of-date `golang` packages.
-  Ensure that `go version` reports at least 1.9. See above for how to install go.
+  Ensure that `go version` reports at least 1.10. See above for how to install go.
 * If you are interested in development, please install the development
 dependencies as well.
 * *WARNING: Older versions of OSX FUSE (for Mac OS X) can cause kernel panics when mounting!*
@@ -156,7 +162,7 @@ dependencies as well.
   (See https://github.com/ipfs/go-ipfs/issues/177)
 * For more details on setting up FUSE (so that you can mount the filesystem), see the docs folder.
 * Shell command completion is available in `misc/completion/ipfs-completion.bash`. Read [docs/command-completion.md](docs/command-completion.md) to learn how to install it.
-* See the [init examples](https://github.com/ipfs/examples/tree/master/examples/init) for how to connect IPFS to systemd or whatever init system your distro uses.
+* See the [init examples](https://github.com/ipfs/website/tree/master/static/docs/examples/init) for how to connect IPFS to systemd or whatever init system your distro uses.
 
 ### Development Dependencies
 
@@ -318,12 +324,12 @@ Please direct general questions and help requests to our
 [forum](https://discuss.ipfs.io) or our IRC channel (freenode #ipfs).
 
 If you believe you've found a bug, check the [issues list](https://github.com/ipfs/go-ipfs/issues)
-and, if you dont see your problem there, either come talk to us on IRC (freenode #ipfs) or
+and, if you don't see your problem there, either come talk to us on IRC (freenode #ipfs) or
 file an issue of your own!
 
 ## Contributing
 
-Please see [Contribute.md](contribute.md)!
+We ❤️ all [our contributors](docs/AUTHORS); this project wouldn’t be what it is without you! If you want to help out, please see [Contribute.md](contribute.md).
 
 This repository falls under the IPFS [Code of Conduct](https://github.com/ipfs/community/blob/master/code-of-conduct.md).
 

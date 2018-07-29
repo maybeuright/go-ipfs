@@ -10,14 +10,14 @@ import (
 
 	help "github.com/ipfs/go-ipfs/importer/helpers"
 	trickle "github.com/ipfs/go-ipfs/importer/trickle"
-	mdag "github.com/ipfs/go-ipfs/merkledag"
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
+	mdag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	chunker "gx/ipfs/QmWo8jYc19ppG7YoTsrr2kEtLRbARTJho5oNXFTR6B7Peq/go-ipfs-chunker"
+	chunker "gx/ipfs/QmVDjhUMtkRskBFAVNwyXuLSKbeAya7JKPnzAxMKDaK4x4/go-ipfs-chunker"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 )
 
 // Common errors
@@ -52,7 +52,7 @@ type DagModifier struct {
 }
 
 // NewDagModifier returns a new DagModifier, the Cid prefix for newly
-// created nodes will be inherted from the passed in node.  If the Cid
+// created nodes will be inhered from the passed in node.  If the Cid
 // version if not 0 raw leaves will also be enabled.  The Prefix and
 // RawLeaves options can be overridden by changing them after the call.
 func NewDagModifier(ctx context.Context, from ipld.Node, serv ipld.DAGService, spl chunker.SplitterGen) (*DagModifier, error) {
@@ -82,7 +82,7 @@ func NewDagModifier(ctx context.Context, from ipld.Node, serv ipld.DAGService, s
 
 // WriteAt will modify a dag file in place
 func (dm *DagModifier) WriteAt(b []byte, offset int64) (int, error) {
-	// TODO: this is currently VERY inneficient
+	// TODO: this is currently VERY inefficient
 	// each write that happens at an offset other than the current one causes a
 	// flush to disk, and dag rewrite
 	if offset == int64(dm.writeStart) && dm.wrBuf != nil {
@@ -481,6 +481,9 @@ func (dm *DagModifier) Truncate(size int64) error {
 	if err != nil {
 		return err
 	}
+	if size == int64(realSize) {
+		return nil
+	}
 
 	// Truncate can also be used to expand the file
 	if size > int64(realSize) {
@@ -526,7 +529,13 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	var cur uint64
 	end := 0
 	var modified ipld.Node
-	ndata := new(ft.FSNode)
+	ndata, err := ft.FSNodeFromBytes(nd.Data())
+	if err != nil {
+		return nil, err
+	}
+	// Reset the block sizes of the node to adjust them
+	// with the new values of the truncated children.
+	ndata.RemoveAllBlockSizes()
 	for i, lnk := range nd.Links() {
 		child, err := lnk.GetNode(ctx, ds)
 		if err != nil {
@@ -555,13 +564,13 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 		ndata.AddBlockSize(childsize)
 	}
 
-	err := ds.Add(ctx, modified)
+	err = ds.Add(ctx, modified)
 	if err != nil {
 		return nil, err
 	}
 
 	nd.SetLinks(nd.Links()[:end])
-	err = nd.AddNodeLinkClean("", modified)
+	err = nd.AddNodeLink("", modified)
 	if err != nil {
 		return nil, err
 	}
@@ -570,7 +579,7 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	if err != nil {
 		return nil, err
 	}
-
+	// Save the new block sizes to the original node.
 	nd.SetData(d)
 
 	// invalidate cache and recompute serialized data

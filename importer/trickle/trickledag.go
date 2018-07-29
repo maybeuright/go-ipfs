@@ -4,10 +4,10 @@
 // as additional links.
 //
 // Each layer is a trickle sub-tree and is limited by an increasing
-// maxinum depth. Thus, the nodes first layer
+// maximum depth. Thus, the nodes first layer
 // can only hold leaves (depth 1) but subsequent layers can grow deeper.
 // By default, this module places 4 nodes per layer (that is, 4 subtrees
-// of the same maxinum depth before increasing it).
+// of the same maximum depth before increasing it).
 //
 // Trickle DAGs are very good for sequentially reading data, as the
 // first data leaves are directly reachable from the root and those
@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	h "github.com/ipfs/go-ipfs/importer/helpers"
-	dag "github.com/ipfs/go-ipfs/merkledag"
 	ft "github.com/ipfs/go-ipfs/unixfs"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 )
 
 // layerRepeat specifies how many times to append a child tree of a
@@ -283,7 +283,7 @@ func verifyTDagRec(n ipld.Node, depth int, p VerifyParams) error {
 			}
 
 			if pbn.GetType() != ft.TRaw {
-				return errors.New("Expected raw block")
+				return errors.New("expected raw block")
 			}
 
 			if p.RawLeaves {

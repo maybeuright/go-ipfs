@@ -1,5 +1,338 @@
 # go-ipfs changelog
 
+## 0.4.17 2018-07-27
+
+Ipfs 0.4.17 is a quick release to fix a major performance regression in bitswap
+(mostly affecting go-ipfs -> js-ipfs transfers). However, while motivated by
+this fix, this release contains a few other goodies that will excite some users.
+
+The headline feature in this release is [urlstore][] support. Urlstore is a
+generalization of the filestore backend that can fetch file blocks from remote
+URLs on-demand instead of storing them in the local datastore.
+
+Additionally, we've added support for extracting inline blocks from CIDs (blocks
+inlined into CIDs using the identity hash function). However, go-ipfs won't yet
+*create* such CIDs so you're unlikely to see any in the wild.
+
+[urlstore]: https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#ipfs-urlstore
+
+Features:
+
+* URLStore ([ipfs/go-ipfs#4896](https://github.com/ipfs/go-ipfs/pull/4896))
+* Add trickle-dag support to the urlstore ([ipfs/go-ipfs#5245](https://github.com/ipfs/go-ipfs/pull/5245)).
+* Allow specifying how the data field in the `object get` is encoded ([ipfs/go-ipfs#5139](https://github.com/ipfs/go-ipfs/pull/5139))
+* Add a `-U` flag to `files ls` to disable sorting ([ipfs/go-ipfs#5219](https://github.com/ipfs/go-ipfs/pull/5219))
+* Add an efficient `--size-only` flag to the `repo stat` ([ipfs/go-ipfs#5010](https://github.com/ipfs/go-ipfs/pull/5010))
+* Inline blocks in CIDs ([ipfs/go-ipfs#5117](https://github.com/ipfs/go-ipfs/pull/5117))
+
+Changes/Fixes:
+
+* Make `ipfs files ls -l` correctly report the hash and size of files ([ipfs/go-ipfs#5045](https://github.com/ipfs/go-ipfs/pull/5045))
+* Fix sorting of `files ls` ([ipfs/go-ipfs#5219](https://github.com/ipfs/go-ipfs/pull/5219))
+* Improve prefetching in `ipfs cat` and related commands ([ipfs/go-ipfs#5162](https://github.com/ipfs/go-ipfs/pull/5162))
+* Better error message when `ipfs cp` fails ([ipfs/go-ipfs#5218](https://github.com/ipfs/go-ipfs/pull/5218))
+* Don't wait for the peer to close it's end of a bitswap stream before considering the block "sent" ([ipfs/go-ipfs#5258](https://github.com/ipfs/go-ipfs/pull/5258))
+* Fix resolving links in sharded directories via the gateway ([ipfs/go-ipfs#5271](https://github.com/ipfs/go-ipfs/pull/5271))
+* Fix building when there's a space in the current directory ([ipfs/go-ipfs#5261](https://github.com/ipfs/go-ipfs/pull/5261))
+
+Documentation:
+
+* Improve documentation about the bloomfilter config options ([ipfs/go-ipfs#4924](https://github.com/ipfs/go-ipfs/pull/4924))
+
+General refactorings and internal bug fixes:
+
+* Remove the `Offset()` method from the DAGReader ([ipfs/go-ipfs#5190](https://github.com/ipfs/go-ipfs/pull/5190))
+* Fix TestLargeWriteChunks seek behavior ([ipfs/go-ipfs#5276](https://github.com/ipfs/go-ipfs/pull/5276))
+* Add a build tag to disable dynamic plugins ([ipfs/go-ipfs#5274](https://github.com/ipfs/go-ipfs/pull/5274))
+* Use FSNode instead of the Protobuf structure in PBDagReader ([ipfs/go-ipfs#5189](https://github.com/ipfs/go-ipfs/pull/5189))
+* Remove support for non-directory MFS roots ([ipfs/go-ipfs#5170](https://github.com/ipfs/go-ipfs/pull/5170))
+* Remove `UnixfsNode` from the balanced builder ([ipfs/go-ipfs#5118](https://github.com/ipfs/go-ipfs/pull/5118))
+* Fix truncating files (internal) when already at the correct size ([ipfs/go-ipfs#5253](https://github.com/ipfs/go-ipfs/pull/5253))
+* Fix `dagTruncate` (internal) to preserve the node type ([ipfs/go-ipfs#5216](https://github.com/ipfs/go-ipfs/pull/5216))
+* Add an internal interface for unixfs directories ([ipfs/go-ipfs#5160](https://github.com/ipfs/go-ipfs/pull/5160))
+* Refactor the CoreAPI path types and interfaces ([ipfs/go-ipfs#4672](https://github.com/ipfs/go-ipfs/pull/4672))
+* Refactor `precalcNextBuf` in the dag reader ([ipfs/go-ipfs#5237](https://github.com/ipfs/go-ipfs/pull/5237))
+* Update a bunch of dependencies that haven't been updated for a while ([ipfs/go-ipfs#5268](https://github.com/ipfs/go-ipfs/pull/5268))
+
+## 0.4.16 2018-07-13
+
+Ipfs 0.4.16 is a fairly small release in terms of changes to the ipfs codebase,
+but it contains a huge amount of changes and improvements from the libraries we
+depend on, notably libp2p.
+
+This release includes small a repo migration to account for some changes to the
+DHT. It should only take a second to run but, depending on your configuration,
+you may need to run it manually.
+
+You can run a migration by either:
+
+1. Selecting "Yes" when the daemon prompts you to migrate.
+2. Running the daemon with the `--migrate=true` flag.
+3. Manually [running](https://github.com/ipfs/fs-repo-migrations/blob/master/run.md#running-repo-migrations) the migration.
+
+### Libp2p
+
+This version of ipfs contains the changes made in libp2p from v5.0.14 through
+v6.0.5. In that time, we have made significant changes to the codebase to allow
+for easier integration of future transports and modules along with the usual
+performance and reliability improvements. You can find many of these
+improvements in the libp2p 6.0 [release blog
+post](https://ipfs.io/blog/39-go-libp2p-6-0-0/).
+
+The primary motivation for this refactor was adding support for network
+transports like QUIC that have built-in support for encryption, authentication,
+and stream multiplexing. It will also allow us to plug-in new security
+transports (like TLS) without hard-coding them.
+
+For example, our [QUIC
+transport](https://github.com/libp2p/go-libp2p-quic-transport) currently works,
+and can be plugged into libp2p manually (though note that it is still
+experimental, as the upstream spec is still in flux). Further work is needed to
+make enabling this inside ipfs easy and not require recompilation.
+
+On the user-visible side of things, we've improved our dialing logic and
+timeouts. We now abort dials to local subnets after 5 seconds and abort all
+dials if the TCP handshake takes longer than 5 seconds. This should
+significantly improve performance in some cases as we limit the number of
+concurrent dials and slow dials to non-responsive peers have been known to clog
+the dialer, blocking dials to reachable peers. Importantly, this should improve
+DHT performance as it tends to spend a disproportional amount of time connecting
+to peers.
+
+We have also made a few noticeable changes to the DHT: we've significantly
+improved the chances of finding a value on the DHT, tightened up some of our
+validation logic, and fixed some issues that should reduce traffic to nodes
+running in dhtclient mode over time.
+
+Of these, the first one will likely see the most impact. In the past, when
+putting a value (e.g., an IPNS entry) into the DHT, we'd try to put the value to
+K peers (where K for us is 20). However, we'd often fail to connect to many of
+these peers so we'd end up putting the value to significantly fewer than K
+peers. We now try to put the value to the K peers we can actually connect to.
+
+Finally, we've fixed JavaScript interoperability in go-multiplex, the one stream
+muxer that both go-libp2p and js-libp2p implement. This should significantly
+improve go-libp2p and js-libp2p interoperability.
+
+### Multiformats
+
+We are also changing the way that people write 'ipfs' multiaddrs. Currently,
+ipfs multiaddrs look something like
+`/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ`.
+However, calling them 'ipfs' multiaddrs is a bit misleading, as this is actually
+the multiaddr of a libp2p peer that happens to run ipfs. Other protocols built
+on libp2p right now still have to use multiaddrs that say 'ipfs', even if they
+have nothing to do with ipfs. Therefore, we are renaming them to 'p2p'
+multiaddrs. Moving forward, these addresses will be written as:
+`/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ`.
+
+This release adds support for *parsing* both types of addresses (`.../ipfs/...`
+and `.../p2p/...`) into the same network format, and the network format is
+remaining exactly the same. A future release will have the ipfs daemon switch to
+*printing* out addresses this way once a large enough portion of the network
+has upgraded.
+
+N.B., these addresses are *not* related to IPFS *file* names (`/ipfs/Qm...`).
+Disambiguating the two was yet another motivation to switch the protocol name to
+`/p2p/`.
+
+### IPFS
+
+On the ipfs side of things, we've started embedding public keys inside IPNS
+records and have enabled the Git plugin by default.
+
+Embedding public keys inside IPNS records allows lookups to be faster as we only
+need to fetch the record itself (and not the public key separately). It also
+fixes an issue where DHT peers wouldn't store a record for a peer if they didn't
+have their public key already. Combined with some of the DHT and dialing fixes,
+this should improve the performance of IPNS (once a majority of the network
+updates).
+
+Second, our public builds now include the Git plugin (in past builds, you could
+add it yourself, but doing so was not easy). With this, ipfs can ingest and
+operate over Git repositories and commit graphs directly. For more information
+on this, see [the go-ipld-git repo](https://github.com/ipfs/go-ipld-git).
+
+Finally, we've included many smaller bugfixes, refactorings, improved
+documentation, and a good bit more. For the full details, see the changelog
+below.
+
+## 0.4.16-rc3 2018-07-09
+- Bugfixes
+  - Fix dht commands when ipns over pubsub is enabled ([ipfs/go-ipfs#5200](https://github.com/ipfs/go-ipfs/pull/5200))
+  - Fix content routing when ipns over pubsub is enabled ([ipfs/go-ipfs#5200](https://github.com/ipfs/go-ipfs/pull/5200))
+  - Correctly handle multi-hop dnslink resolution ([ipfs/go-ipfs#5202](https://github.com/ipfs/go-ipfs/pull/5202))
+
+## 0.4.16-rc2 2018-07-05
+- Bugfixes
+  - Fix usage of file name vs path name in adder ([ipfs/go-ipfs#5167](https://github.com/ipfs/go-ipfs/pull/5167))
+  - Fix `ipfs update` working with migrations ([ipfs/go-ipfs#5194](https://github.com/ipfs/go-ipfs/pull/5194))
+- Documentation
+  - Grammar fix in fuse docs ([ipfs/go-ipfs#5164](https://github.com/ipfs/go-ipfs/pull/5164))
+
+## 0.4.16-rc1 2018-06-27
+- Features
+  - Embed public keys inside ipns records, use for validation ([ipfs/go-ipfs#5079](https://github.com/ipfs/go-ipfs/pull/5079))
+  - Preload git plugin by default ([ipfs/go-ipfs#4991](https://github.com/ipfs/go-ipfs/pull/4991))
+- Improvements
+  - Only resolve dnslinks once in the gateway ([ipfs/go-ipfs#4977](https://github.com/ipfs/go-ipfs/pull/4977))
+  - Libp2p transport refactor update ([ipfs/go-ipfs#4817](https://github.com/ipfs/go-ipfs/pull/4817))
+  - Improve swarm connect/disconnect commands ([ipfs/go-ipfs#5107](https://github.com/ipfs/go-ipfs/pull/5107))
+- Documentation
+  - Fix typo of sudo install command ([ipfs/go-ipfs#5001](https://github.com/ipfs/go-ipfs/pull/5001))
+  - Fix experimental features Table of Contents ([ipfs/go-ipfs#4976](https://github.com/ipfs/go-ipfs/pull/4976))
+  - Fix link to systemd init scripts in the README ([ipfs/go-ipfs#4968](https://github.com/ipfs/go-ipfs/pull/4968))
+  - Add package overview comments to coreapi ([ipfs/go-ipfs#5108](https://github.com/ipfs/go-ipfs/pull/5108))
+  - Add README to docs folder ([ipfs/go-ipfs#5095](https://github.com/ipfs/go-ipfs/pull/5095))
+  - Add system requirements to README ([ipfs/go-ipfs#5137](https://github.com/ipfs/go-ipfs/pull/5137))
+- Bugfixes
+  - Fix goroutine leak in pin verify ([ipfs/go-ipfs#5011](https://github.com/ipfs/go-ipfs/pull/5011))
+  - Fix commit string in version ([ipfs/go-ipfs#4982](https://github.com/ipfs/go-ipfs/pull/4982))
+  - Fix `key rename` command output error ([ipfs/go-ipfs#4962](https://github.com/ipfs/go-ipfs/pull/4962))
+  - Report error source when failing to construct private network ([ipfs/go-ipfs#4952](https://github.com/ipfs/go-ipfs/pull/4952))
+  - Fix build on DragonFlyBSD ([ipfs/go-ipfs#5031](https://github.com/ipfs/go-ipfs/pull/5031))
+  - Fix goroutine leak in dag put ([ipfs/go-ipfs#5016](https://github.com/ipfs/go-ipfs/pull/5016))
+  - Fix goroutine leaks in refs.go ([ipfs/go-ipfs#5018](https://github.com/ipfs/go-ipfs/pull/5018))
+  - Fix panic, Don't handle errors with fallthrough ([ipfs/go-ipfs#5072](https://github.com/ipfs/go-ipfs/pull/5072))
+  - Fix how filestore is hooked up with caching ([ipfs/go-ipfs#5122](https://github.com/ipfs/go-ipfs/pull/5122))
+  - Add record validation to offline routing ([ipfs/go-ipfs#5116](https://github.com/ipfs/go-ipfs/pull/5116))
+  - Fix `ipfs update` working with migrations ([ipfs/go-ipfs#5194](https://github.com/ipfs/go-ipfs/pull/5194))
+- General Changes and Refactorings
+  - Remove leftover bits of dead code ([ipfs/go-ipfs#5022](https://github.com/ipfs/go-ipfs/pull/5022))
+  - Remove fuse platform build constraints ([ipfs/go-ipfs#5033](https://github.com/ipfs/go-ipfs/pull/5033))
+  - Warning when legacy NoSync setting is set ([ipfs/go-ipfs#5036](https://github.com/ipfs/go-ipfs/pull/5036))
+  - Clean up and refactor namesys module ([ipfs/go-ipfs#5007](https://github.com/ipfs/go-ipfs/pull/5007))
+  - When raw-leaves are used for empty files use 'Raw' nodes ([ipfs/go-ipfs#4693](https://github.com/ipfs/go-ipfs/pull/4693))
+  - Update dist_root in build scripts ([ipfs/go-ipfs#5093](https://github.com/ipfs/go-ipfs/pull/5093))
+  - Integrate `pb.Data` into `FSNode` to avoid duplicating fields ([ipfs/go-ipfs#5098](https://github.com/ipfs/go-ipfs/pull/5098))
+  - Reduce log level when we can't republish ([ipfs/go-ipfs#5091](https://github.com/ipfs/go-ipfs/pull/5091))
+  - Extract ipns record logic to go-ipns ([ipfs/go-ipfs#5124](https://github.com/ipfs/go-ipfs/pull/5124))
+- Testing
+  - Collect test times for sharness ([ipfs/go-ipfs#4959](https://github.com/ipfs/go-ipfs/pull/4959))
+  - Fix sharness iptb connect timeout ([ipfs/go-ipfs#4966](https://github.com/ipfs/go-ipfs/pull/4966))
+  - Add more timeouts to the jenkins pipeline ([ipfs/go-ipfs#4958](https://github.com/ipfs/go-ipfs/pull/4958))
+  - Use go 1.10 on jenkins ([ipfs/go-ipfs#5009](https://github.com/ipfs/go-ipfs/pull/5009))
+  - Speed up multinode sharness test ([ipfs/go-ipfs#4967](https://github.com/ipfs/go-ipfs/pull/4967))
+  - Print out iptb logs on iptb test failure (for debugging CI) ([ipfs/go-ipfs#5069](https://github.com/ipfs/go-ipfs/pull/5069))
+  - Disable the MacOS tests in jenkins ([ipfs/go-ipfs#5119](https://github.com/ipfs/go-ipfs/pull/5119))
+  - Make republisher test robust against timing issues ([ipfs/go-ipfs#5125](https://github.com/ipfs/go-ipfs/pull/5125))
+  - Archive sharness trash dirs in jenkins ([ipfs/go-ipfs#5071](https://github.com/ipfs/go-ipfs/pull/5071))
+  - Fixup DHT sharness tests ([ipfs/go-ipfs#5114](https://github.com/ipfs/go-ipfs/pull/5114))
+- Dependencies
+  - Update go-ipld-git to fix mergetag resolving ([ipfs/go-ipfs#4988](https://github.com/ipfs/go-ipfs/pull/4988))
+  - Fix duplicate /x/sys imports ([ipfs/go-ipfs#5068](https://github.com/ipfs/go-ipfs/pull/5068))
+  - Update stream multiplexers ([ipfs/go-ipfs#5075](https://github.com/ipfs/go-ipfs/pull/5075))
+  - Update dependencies: go-log, sys, go-crypto ([ipfs/go-ipfs#5100](https://github.com/ipfs/go-ipfs/pull/5100))
+  - Explicitly import go-multiaddr-dns in config/bootstrap_peers ([ipfs/go-ipfs#5144](https://github.com/ipfs/go-ipfs/pull/5144))
+  - Gx update with dht and dialing improvements ([ipfs/go-ipfs#5158](https://github.com/ipfs/go-ipfs/pull/5158))
+
+## 0.4.15 2018-05-09
+
+This release is significantly smaller than the last as much of the work on
+improving our datastores, and other libraries libp2p has yet to be merged.
+However, it still includes many welcome improvements.
+
+As with 0.4.12 and 0.4.14 (0.4.13 was a patch), this release has a negative
+diff-stat. Unfortunately, much of this code isn't actually going away but at
+least it's being moved out into separate repositories.
+
+Much of the work that made it into this release is under the hood. We've cleaned
+up some code, extracted several packages into their own repositories, and made
+some long neglected optimizations (e.g., handling of sharded directories).
+Additionally, this release includes a bunch of tests for our CLI commands that
+should help us avoid some of the issues we've seen in the past few releases.
+
+More visibly, thanks to @djdv's efforts, this release includes some significant
+Windows improvements (with more on the way). Specifically, this release includes
+better handling of repo lockfiles (no more `ipfs repo fsck`), stdin command-line
+support, and, last but not least, IPFS no longer writes random files with scary
+garbage in the drive root. To read more about future windows improvements, take
+a look at this [blog post](https://blog.ipfs.io/36-a-look-at-windows/).
+
+To better support low-power devices, we've added a low-power config profile.
+This can be enabled when initializing a repo by running `ipfs init` with the
+`--profile=lowpower` flag or later by running `ipfs config profile apply lowpower`.
+
+Finally, with this release we have begun distributing self-contained source
+archives of go-ipfs and its dependencies. This should be a welcome improvement
+for both packagers and those living in countries with harmonized internet
+access.
+
+- Features
+  - Add options for record count and timeout for resolving DHT paths ([ipfs/go-ipfs#4733](https://github.com/ipfs/go-ipfs/pull/4733))
+  - Add low power init profile ([ipfs/go-ipfs#4154](https://github.com/ipfs/go-ipfs/pull/4154))
+  - Add Opentracing plugin support ([ipfs/go-ipfs#4506](https://github.com/ipfs/go-ipfs/pull/4506))
+  - Add make target to build source tarballs ([ipfs/go-ipfs#4920](https://github.com/ipfs/go-ipfs/pull/4920))
+
+- Improvements
+  - Add BlockedFetched/Added/Removed events to Blockservice ([ipfs/go-ipfs#4649](https://github.com/ipfs/go-ipfs/pull/4649))
+  - Improve performance of HAMT code ([ipfs/go-ipfs#4889](https://github.com/ipfs/go-ipfs/pull/4889))
+  - Avoid unnecessarily resolving child nodes when listing a sharded directory ([ipfs/go-ipfs#4884](https://github.com/ipfs/go-ipfs/pull/4884))
+  - Tar writer now supports sharded ipfs directories ([ipfs/go-ipfs#4873](https://github.com/ipfs/go-ipfs/pull/4873))
+  - Infer type from CID when possible in `ipfs ls` ([ipfs/go-ipfs#4890](https://github.com/ipfs/go-ipfs/pull/4890))
+  - Deduplicate keys in GetMany ([ipfs/go-ipfs#4888](https://github.com/ipfs/go-ipfs/pull/4888))
+
+- Documentation
+  - Fix spelling of retrieval ([ipfs/go-ipfs#4819](https://github.com/ipfs/go-ipfs/pull/4819))
+  - Update broken links ([ipfs/go-ipfs#4798](https://github.com/ipfs/go-ipfs/pull/4798))
+  - Remove roadmap.md ([ipfs/go-ipfs#4834](https://github.com/ipfs/go-ipfs/pull/4834))
+  - Remove link to IPFS paper in contribute.md ([ipfs/go-ipfs#4812](https://github.com/ipfs/go-ipfs/pull/4812))
+  - Fix broken todo link in readme.md ([ipfs/go-ipfs#4865](https://github.com/ipfs/go-ipfs/pull/4865))
+  - Document ipns pubsub ([ipfs/go-ipfs#4903](https://github.com/ipfs/go-ipfs/pull/4903))
+  - Fix missing profile docs ([ipfs/go-ipfs#4846](https://github.com/ipfs/go-ipfs/pull/4846))
+  - Fix a few typos ([ipfs/go-ipfs#4835](https://github.com/ipfs/go-ipfs/pull/4835))
+  - Fix typo in fsrepo error message ([ipfs/go-ipfs#4933](https://github.com/ipfs/go-ipfs/pull/4933))
+  - Remove go-ipfs version from issue template ([ipfs/go-ipfs#4943](https://github.com/ipfs/go-ipfs/pull/4943))
+  - Add docs for --profile=lowpower ([ipfs/go-ipfs#4970](https://github.com/ipfs/go-ipfs/pull/4970))
+  - Improve Windows build documentation ([ipfs/go-ipfs#4691](https://github.com/ipfs/go-ipfs/pull/4691))
+
+- Bugfixes
+  - Check CIDs in base case when diffing nodes ([ipfs/go-ipfs#4767](https://github.com/ipfs/go-ipfs/pull/4767))
+  - Support for CIDv1 with custom mhtype in `ipfs block put` ([ipfs/go-ipfs#4563](https://github.com/ipfs/go-ipfs/pull/4563))
+  - Clean path in DagArchive ([ipfs/go-ipfs#4743](https://github.com/ipfs/go-ipfs/pull/4743))
+  - Set the prefix for MFS root in `ipfs add --hash-only` ([ipfs/go-ipfs#4755](https://github.com/ipfs/go-ipfs/pull/4755))
+  - Fix get output path ([ipfs/go-ipfs#4809](https://github.com/ipfs/go-ipfs/pull/4809))
+  - Fix incorrect Read calls ([ipfs/go-ipfs#4792](https://github.com/ipfs/go-ipfs/pull/4792))
+  - Use prefix in bootstrapWritePeers ([ipfs/go-ipfs#4832](https://github.com/ipfs/go-ipfs/pull/4832))
+  - Fix mfs Directory.Path not working ([ipfs/go-ipfs#4844](https://github.com/ipfs/go-ipfs/pull/4844))
+  - Remove header in `ipfs stats bw` if not polling ([ipfs/go-ipfs#4856](https://github.com/ipfs/go-ipfs/pull/4856))
+  - Match Go's GOPATH defaults behaviour in build scripts ([ipfs/go-ipfs#4678](https://github.com/ipfs/go-ipfs/pull/4678))
+  - Fix default-net profile not reverting bootstrap config ([ipfs/go-ipfs#4845](https://github.com/ipfs/go-ipfs/pull/4845))
+  - Fix excess goroutines in bitswap caused by insecure CIDs ([ipfs/go-ipfs#4946](https://github.com/ipfs/go-ipfs/pull/4946))
+
+- General Changes and Refactorings
+  - Refactor trickle DAG builder ([ipfs/go-ipfs#4730](https://github.com/ipfs/go-ipfs/pull/4730))
+  - Split the coreapi interface into multiple files ([ipfs/go-ipfs#4802](https://github.com/ipfs/go-ipfs/pull/4802))
+  - Make `ipfs init` command use new cmds lib ([ipfs/go-ipfs#4732](https://github.com/ipfs/go-ipfs/pull/4732))
+  - Extract thirdparty/tar package ([ipfs/go-ipfs#4857](https://github.com/ipfs/go-ipfs/pull/4857))
+  - Reduce log level when for disconnected peers to info ([ipfs/go-ipfs#4811](https://github.com/ipfs/go-ipfs/pull/4811))
+  - Only visit nodes in EnumerateChildrenAsync when asked ([ipfs/go-ipfs#4885](https://github.com/ipfs/go-ipfs/pull/4885))
+  - Refactor coreapi options ([ipfs/go-ipfs#4807](https://github.com/ipfs/go-ipfs/pull/4807))
+  - Fix error style for most errors ([ipfs/go-ipfs#4829](https://github.com/ipfs/go-ipfs/pull/4829))
+  - Ensure `--help` always works, even with /dev/null stdin ([ipfs/go-ipfs#4849](https://github.com/ipfs/go-ipfs/pull/4849))
+  - Deduplicate AddNodeLinkClean into AddNodeLink ([ipfs/go-ipfs#4940](https://github.com/ipfs/go-ipfs/pull/4940))
+  - Remove some dead code ([ipfs/go-ipfs#4833](https://github.com/ipfs/go-ipfs/pull/4833))
+  - Remove unused imports ([ipfs/go-ipfs#4955](https://github.com/ipfs/go-ipfs/pull/4955))
+  - Fix go vet warnings ([ipfs/go-ipfs#4859](https://github.com/ipfs/go-ipfs/pull/4859))
+
+- Testing
+  - Generate JUnit test reports for sharness tests ([ipfs/go-ipfs#4530](https://github.com/ipfs/go-ipfs/pull/4530))
+  - Fix t0063-daemon-init.sh by adding test profile to daemon ([ipfs/go-ipfs#4816](https://github.com/ipfs/go-ipfs/pull/4816))
+  - Remove circular dependencies in merkledag package tests ([ipfs/go-ipfs#4704](https://github.com/ipfs/go-ipfs/pull/4704))
+  - Check that all the commands fail when passed a bad flag ([ipfs/go-ipfs#4848](https://github.com/ipfs/go-ipfs/pull/4848))
+  - Allow for some small margin of code coverage dropping on commit ([ipfs/go-ipfs#4867](https://github.com/ipfs/go-ipfs/pull/4867))
+  - Add confirmation to archive-branches script ([ipfs/go-ipfs#4797](https://github.com/ipfs/go-ipfs/pull/4797))
+
+- Dependencies
+  - Update lock package ([ipfs/go-ipfs#4855](https://github.com/ipfs/go-ipfs/pull/4855))
+  - Update to latest go-datastore. Remove thirdparty/datastore2 ([ipfs/go-ipfs#4742](https://github.com/ipfs/go-ipfs/pull/4742))
+  - Extract fs lock into go-fs-lock ([ipfs/go-ipfs#4631](https://github.com/ipfs/go-ipfs/pull/4631))
+  - Extract: exchange/interface.go, blocks/blocksutil, exchange/offline ([ipfs/go-ipfs#4912](https://github.com/ipfs/go-ipfs/pull/4912))
+  - Remove unused lock dep ([ipfs/go-ipfs#4971](https://github.com/ipfs/go-ipfs/pull/4971))
+  - Update iptb ([ipfs/go-ipfs#4965](https://github.com/ipfs/go-ipfs/pull/4965))
+  - Update go-ipfs-cmds to fix stdin on windows ([ipfs/go-ipfs#4975](https://github.com/ipfs/go-ipfs/pull/4975))
+  - Update go-ds-flatfs to fix windows corruption issue ([ipfs/go-ipfs#4872](https://github.com/ipfs/go-ipfs/pull/4872))
+
 ## 0.4.14 2018-03-22
 
 Ipfs 0.4.14 is a big release with a large number of improvements and bugfixes.
@@ -130,7 +463,7 @@ remove them before updating.
   - Update badgerds to fix i386 windows build ([ipfs/go-ipfs#4464](https://github.com/ipfs/go-ipfs/pull/4464))
   - Only construct bitswap event loggable if necessary ([ipfs/go-ipfs#4533](https://github.com/ipfs/go-ipfs/pull/4533))
   - Ensure that flush on the mfs root flushes its directory ([ipfs/go-ipfs#4509](https://github.com/ipfs/go-ipfs/pull/4509))
-  - Fix defered unlock of pin lock in AddR ([ipfs/go-ipfs#4562](https://github.com/ipfs/go-ipfs/pull/4562))
+  - Fix deferred unlock of pin lock in AddR ([ipfs/go-ipfs#4562](https://github.com/ipfs/go-ipfs/pull/4562))
   - Fix iOS builds ([ipfs/go-ipfs#4610](https://github.com/ipfs/go-ipfs/pull/4610))
   - Calling repo gc now frees up space with badgerds ([ipfs/go-ipfs#4578](https://github.com/ipfs/go-ipfs/pull/4578))
   - Fix leak in bitswap sessions shutdown ([ipfs/go-ipfs#4658](https://github.com/ipfs/go-ipfs/pull/4658))
@@ -282,7 +615,7 @@ wantlist updates to every connected bitswap partner, as well as searching the
 DHT for providers less frequently. In future releases we will migrate over more
 ipfs commands to take advantage of bitswap sessions. As nodes update to this
 and future versions, expect to see idle bandwidth usage on the ipfs network
-go down noticably.
+go down noticeably.
 
 The never ending effort to reduce resource consumption had a few important
 updates this release. First, the bitswap sessions changes discussed above will
@@ -332,7 +665,7 @@ You can read more on this topic in [Plugin docs](docs/plugins.md)
 
 In order to simplify its integration with fs-repo-migrations, we've switched
 the ipfs/go-ipfs docker image from a musl base to a glibc base. For most users
-this will not be noticable, but if you've been building your own images based
+this will not be noticeable, but if you've been building your own images based
 off this image, you'll have to update your dockerfile. We recommend a
 multi-stage dockerfile, where the build stage is based off of a regular Debian or
 other glibc-based image, and the assembly stage is based off of the ipfs/go-ipfs
@@ -1010,14 +1343,14 @@ This is the first Release Candidate. Unless there are vulnerabilities or regress
 
 ### 0.4.2 - 2016-05-17
 
-This is a patch release which fixes perfomance and networking bugs in go-libp2p,
+This is a patch release which fixes performance and networking bugs in go-libp2p,
 You should see improvements in CPU and RAM usage, as well as speed of object lookups.
 There are also a few other nice improvements.
 
 * Notable Fixes
   * Set a deadline for dialing attempts. This prevents a node from accumulating
     failed connections. (@whyrusleeping)
-  * Avoid unneccessary string/byte conversions in go-multihash. (@whyrusleeping)
+  * Avoid unnecessary string/byte conversions in go-multihash. (@whyrusleeping)
   * Fix a deadlock around the yamux stream muxer. (@whyrusleeping)
   * Fix a bug that left channels open, causing hangs. (@whyrusleeping)
   * Fix a bug around yamux which caused connection hangs. (@whyrusleeping)
@@ -1077,7 +1410,7 @@ insignificant) features. The primary reason for this release is the listener
 hang bugfix that was shipped in the 0.4.0 release.
 
 * Features
-  * implementated ipfs object diff (@whyrusleeping)
+  * implemented ipfs object diff (@whyrusleeping)
   * allow promises (used in get, refs) to fail (@whyrusleeping)
 
 * Tool changes
@@ -1166,7 +1499,7 @@ on the networking layer.
   * General
     * Add support for HTTP OPTIONS requests. (@lidel)
     * Add `ipfs diag cmds` to view active API requests (@whyrusleeping)
-    * Add an `IPFS_LOW_MEM` environment veriable which relaxes Bitswap's memory usage. (@whyrusleeping)
+    * Add an `IPFS_LOW_MEM` environment variable which relaxes Bitswap's memory usage. (@whyrusleeping)
     * The Docker image now lives at `ipfs/go-ipfs` and has been completely reworked. (@lgierth)
 * Security fixes
   * The gateway path prefix added in v0.3.10 was vulnerable to cross-site
@@ -1351,7 +1684,7 @@ in the future, it will be enabled by default.
 
 This patch update includes a good number of bugfixes, notably, it fixes
 builds on windows, and puts newlines between streaming json objects for a
-proper nsjon format.
+proper ndjson format.
 
 * Features
   * Writable gateway enabled again (@cryptix)
@@ -1359,7 +1692,7 @@ proper nsjon format.
 * Bugfixes
   * fix windows builds (@whyrusleeping)
   * content type on command responses default to text (@whyrusleeping)
-  * add check to makefile to ensure windows builds dont fail silently (@whyrusleeping)
+  * add check to makefile to ensure windows builds don't fail silently (@whyrusleeping)
   * put newlines between streaming json output objects (@whyrusleeping)
   * fix streaming output to flush per write (@whyrusleeping)
   * purposely fail builds pre go1.5 (@whyrusleeping)
@@ -1603,13 +1936,13 @@ This patch update fixes various issues, in particular:
 * ipns resolution timeout bug fix by @whyrusleeping
 * new cluster tests with iptb by @whyrusleeping
 * fix log callstack printing bug by @whyrusleeping
-* document bash completiong by @dylanPowers
+* document bash completion by @dylanPowers
 
 ### 0.3.2 - 2015-04-22
 
 This patch update implements multicast dns as well as fxing a few test issues.
 
-* implment mdns peer discovery @whyrusleeping
+* implement mdns peer discovery @whyrusleeping
 * fix mounting issues in sharness tests @chriscool
 
 ### 0.3.1 - 2015-04-21

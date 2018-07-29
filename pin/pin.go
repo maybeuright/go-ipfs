@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	mdag "github.com/ipfs/go-ipfs/merkledag"
-	dutils "github.com/ipfs/go-ipfs/merkledag/utils"
+	"github.com/ipfs/go-ipfs/dagutils"
+	mdag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	ds "gx/ipfs/QmPpegoMqhAEqjncrzArm7KVWAkCm78rqL2DPuNjhPrshg/go-datastore"
-	logging "gx/ipfs/QmRb5jh8z2E8hMGN2tkvs1yHynUanqnZ3UeKwgN1i9P1F8/go-log"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
+	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
+	ds "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore"
 )
 
 var log = logging.Logger("pin")
@@ -101,7 +101,7 @@ func StringToMode(s string) (Mode, bool) {
 // A Pinner provides the necessary methods to keep track of Nodes which are
 // to be kept locally, according to a pin mode. In practice, a Pinner is in
 // in charge of keeping the list of items from the local storage that should
-// not be garbaged-collected.
+// not be garbage-collected.
 type Pinner interface {
 	// IsPinned returns whether or not the given cid is pinned
 	// and an explanation of why its pinned
@@ -305,7 +305,7 @@ func (p *pinner) isPinnedWithType(c *cid.Cid, mode Mode) (string, bool, error) {
 	switch mode {
 	case Any, Direct, Indirect, Recursive, Internal:
 	default:
-		err := fmt.Errorf("Invalid Pin Mode '%d', must be one of {%d, %d, %d, %d, %d}",
+		err := fmt.Errorf("invalid Pin Mode '%d', must be one of {%d, %d, %d, %d, %d}",
 			mode, Direct, Indirect, Recursive, Internal, Any)
 		return "", false, err
 	}
@@ -518,7 +518,7 @@ func (p *pinner) Update(ctx context.Context, from, to *cid.Cid, unpin bool) erro
 		return fmt.Errorf("'from' cid was not recursively pinned already")
 	}
 
-	err := dutils.DiffEnumerate(ctx, p.dserv, from, to)
+	err := dagutils.DiffEnumerate(ctx, p.dserv, from, to)
 	if err != nil {
 		return err
 	}

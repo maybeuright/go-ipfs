@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	coreapi "github.com/ipfs/go-ipfs/core/coreapi"
+	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
+	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
 
-	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
+	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
 )
 
 var (
@@ -45,7 +46,7 @@ func TestPutWithHash(t *testing.T) {
 		t.Error(err)
 	}
 
-	res, err := api.Dag().Put(ctx, strings.NewReader(`"Hello"`), api.Dag().WithHash(mh.ID, -1))
+	res, err := api.Dag().Put(ctx, strings.NewReader(`"Hello"`), opt.Dag.Hash(mh.ID, -1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,7 +73,7 @@ func TestPath(t *testing.T) {
 		t.Error(err)
 	}
 
-	p, err := coreapi.ParsePath(path.Join(res.Cid().String(), "lnk"))
+	p, err := coreiface.ParsePath(path.Join(res.Cid().String(), "lnk"))
 	if err != nil {
 		t.Error(err)
 	}

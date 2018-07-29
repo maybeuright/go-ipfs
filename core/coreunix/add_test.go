@@ -10,19 +10,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/go-ipfs/blockservice"
 	"github.com/ipfs/go-ipfs/core"
-	dag "github.com/ipfs/go-ipfs/merkledag"
 	"github.com/ipfs/go-ipfs/pin/gc"
 	"github.com/ipfs/go-ipfs/repo"
 	"github.com/ipfs/go-ipfs/repo/config"
-	ds2 "github.com/ipfs/go-ipfs/thirdparty/datastore2"
+	"gx/ipfs/QmNqRBAhovtf4jVd5cF7YvHaFSsQHHZBaUFwGQWPM2CV7R/go-blockservice"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	blockstore "gx/ipfs/QmTVDM4LCSUMFNQzbDLL9zQwp8usE6QHymFdh3h8vL9v6b/go-ipfs-blockstore"
-	pi "gx/ipfs/Qmb3jLEFAQrqdVgWUajqEyuuDoavkSq1XQXz6tWdFWF995/go-ipfs-posinfo"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	files "gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit/files"
-	blocks "gx/ipfs/Qmej7nf81hi2x2tvjRBF3mcp74sQyuDH4VMYDGd1YtXjb2/go-block-format"
+	pi "gx/ipfs/QmSHjPDw8yNgLZ7cBfX7w3Smn7PHwYhNEpd4LHQQxUg35L/go-ipfs-posinfo"
+	blocks "gx/ipfs/QmVzK524a2VWLqyvtBeiHKsUAWYgeAk4DBeZoY7vpNPNRx/go-block-format"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	blockstore "gx/ipfs/QmadMhXJLHMFjpRmh85XjpmVDkEtQpNYEZNRpWRvYVLrvb/go-ipfs-blockstore"
+	files "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
+	datastore "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore"
+	syncds "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore/sync"
 )
 
 const testPeerID = "QmTFauExutTsy4XP6JbMFcw2Wa9645HJt2bTqL6qYDCKfe"
@@ -34,13 +35,13 @@ func TestAddRecursive(t *testing.T) {
 				PeerID: testPeerID, // required by offline node
 			},
 		},
-		D: ds2.ThreadSafeCloserMapDatastore(),
+		D: syncds.MutexWrap(datastore.NewMapDatastore()),
 	}
 	node, err := core.NewNode(context.Background(), &core.BuildCfg{Repo: r})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if k, err := AddR(node, "test_data"); err != nil {
+	if k, err := AddR(node, "test/data"); err != nil {
 		t.Fatal(err)
 	} else if k != "QmWCCga8AbTyfAQ7pTnGT6JgmRMAB3Qp8ZmTEFi5q5o8jC" {
 		t.Fatal("keys do not match: ", k)
@@ -54,7 +55,7 @@ func TestAddGCLive(t *testing.T) {
 				PeerID: testPeerID, // required by offline node
 			},
 		},
-		D: ds2.ThreadSafeCloserMapDatastore(),
+		D: syncds.MutexWrap(datastore.NewMapDatastore()),
 	}
 	node, err := core.NewNode(context.Background(), &core.BuildCfg{Repo: r})
 	if err != nil {
@@ -163,7 +164,7 @@ func testAddWPosInfo(t *testing.T, rawLeaves bool) {
 				PeerID: testPeerID, // required by offline node
 			},
 		},
-		D: ds2.ThreadSafeCloserMapDatastore(),
+		D: syncds.MutexWrap(datastore.NewMapDatastore()),
 	}
 	node, err := core.NewNode(context.Background(), &core.BuildCfg{Repo: r})
 	if err != nil {

@@ -6,7 +6,8 @@ T_$(d) = $(sort $(wildcard $(d)/t[0-9][0-9][0-9][0-9]-*.sh))
 
 DEPS_$(d) := test/bin/random test/bin/multihash test/bin/pollEndpoint \
 	   test/bin/iptb test/bin/go-sleep test/bin/random-files \
-	   test/bin/go-timeout test/bin/hang-fds test/bin/ma-pipe-unidir
+	   test/bin/go-timeout test/bin/hang-fds test/bin/ma-pipe-unidir \
+	   test/bin/cid-fmt
 DEPS_$(d) += cmd/ipfs/ipfs
 DEPS_$(d) += $(d)/clean-test-results
 DEPS_$(d) += $(SHARNESS_$(d))
@@ -29,13 +30,22 @@ export MAKE_SKIP_PATH=1
 
 $(T_$(d)): $$(DEPS_$(d)) # use second expansion so coverage can inject dependency
 	@echo "*** $@ ***"
+ifeq ($(CONTINUE_ON_S_FAILURE),1)
+	-@(cd $(@D) && ./$(@F)) 2>&1
+else
 	@(cd $(@D) && ./$(@F)) 2>&1
+endif
 .PHONY: $(T_$(d))
 
 $(d)/aggregate: $(T_$(d))
 	@echo "*** $@ ***"
 	@(cd $(@D) && ./lib/test-aggregate-results.sh)
 .PHONY: $(d)/aggregate
+
+$(d)/test-results/sharness.xml: export TEST_GENERATE_JUNIT=1
+$(d)/test-results/sharness.xml: test_sharness_expensive
+	@echo "*** $@ ***"
+	@(cd $(@D)/.. && ./lib/gen-junit-report.sh)
 
 $(d)/clean-test-results:
 	rm -rf $(@D)/test-results

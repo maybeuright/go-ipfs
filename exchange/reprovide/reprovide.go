@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ipfs/go-ipfs/thirdparty/verifcid"
-
 	backoff "gx/ipfs/QmPJUtEJsm5YLUWhF6imvyCH8KZXRJa9Wup7FDMwTy5Ufz/backoff"
-	logging "gx/ipfs/QmRb5jh8z2E8hMGN2tkvs1yHynUanqnZ3UeKwgN1i9P1F8/go-log"
-	routing "gx/ipfs/QmTiWLZ6Fo5j4KcTVutZJ5KWRRJrbxzmxA4td8NfEdrPh7/go-libp2p-routing"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	"gx/ipfs/QmQwgv79RHrRnoXmhnpC1BPtY55HHeneGMpPwmmBU1fUAG/go-verifcid"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	routing "gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
+	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 )
 
 var log = logging.Logger("reprovider")
@@ -82,7 +81,7 @@ func (rp *Reprovider) Run(tick time.Duration) {
 func (rp *Reprovider) Reprovide() error {
 	keychan, err := rp.keyProvider(rp.ctx)
 	if err != nil {
-		return fmt.Errorf("Failed to get key chan: %s", err)
+		return fmt.Errorf("failed to get key chan: %s", err)
 	}
 	for c := range keychan {
 		// hash security

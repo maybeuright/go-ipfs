@@ -9,7 +9,7 @@ import (
 // Pin holds information about pinned resource
 type Pin interface {
 	// Path to the pinned object
-	Path() Path
+	Path() ResolvedPath
 
 	// Type of the pin
 	Type() string
@@ -27,7 +27,7 @@ type PinStatus interface {
 // BadPinNode is a node that has been marked as bad by Pin.Verify
 type BadPinNode interface {
 	// Path is the path of the node
-	Path() Path
+	Path() ResolvedPath
 
 	// Err is the reason why the node has been marked as bad
 	Err() error
@@ -39,23 +39,8 @@ type PinAPI interface {
 	// tree
 	Add(context.Context, Path, ...options.PinAddOption) error
 
-	// WithRecursive is an option for Add which specifies whether to pin an entire
-	// object tree or just one object. Default: true
-	WithRecursive(bool) options.PinAddOption
-
 	// Ls returns list of pinned objects on this node
 	Ls(context.Context, ...options.PinLsOption) ([]Pin, error)
-
-	// WithType is an option for Ls which allows to specify which pin types should
-	// be returned
-	//
-	// Supported values:
-	// * "direct" - directly pinned objects
-	// * "recursive" - roots of recursive pins
-	// * "indirect" - indirectly pinned objects (referenced by recursively pinned
-	//    objects)
-	// * "all" - all pinned objects (default)
-	WithType(string) options.PinLsOption
 
 	// Rm removes pin for object specified by the path
 	Rm(context.Context, Path) error

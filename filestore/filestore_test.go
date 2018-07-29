@@ -7,12 +7,12 @@ import (
 	"math/rand"
 	"testing"
 
-	dag "github.com/ipfs/go-ipfs/merkledag"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	ds "gx/ipfs/QmPpegoMqhAEqjncrzArm7KVWAkCm78rqL2DPuNjhPrshg/go-datastore"
-	blockstore "gx/ipfs/QmTVDM4LCSUMFNQzbDLL9zQwp8usE6QHymFdh3h8vL9v6b/go-ipfs-blockstore"
-	posinfo "gx/ipfs/Qmb3jLEFAQrqdVgWUajqEyuuDoavkSq1XQXz6tWdFWF995/go-ipfs-posinfo"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
+	posinfo "gx/ipfs/QmSHjPDw8yNgLZ7cBfX7w3Smn7PHwYhNEpd4LHQQxUg35L/go-ipfs-posinfo"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	blockstore "gx/ipfs/QmadMhXJLHMFjpRmh85XjpmVDkEtQpNYEZNRpWRvYVLrvb/go-ipfs-blockstore"
+	ds "gx/ipfs/QmeiCcJfDW1GJnWUArudsv5rQsihpi4oyddPhdqo3CfX6i/go-datastore"
 )
 
 func newTestFilestore(t *testing.T) (string, *Filestore) {
@@ -23,6 +23,7 @@ func newTestFilestore(t *testing.T) (string, *Filestore) {
 		t.Fatal(err)
 	}
 	fm := NewFileManager(mds, testdir)
+	fm.AllowFiles = true
 
 	bs := blockstore.NewBlockstore(mds)
 	fstore := NewFilestore(bs, fm)
@@ -160,5 +161,17 @@ func TestDeletes(t *testing.T) {
 		if deleted[c.KeyString()] {
 			t.Fatal("shouldnt have reference to this key anymore")
 		}
+	}
+}
+
+func TestIsURL(t *testing.T) {
+	if !IsURL("http://www.example.com") {
+		t.Fatal("IsURL failed: http://www.example.com")
+	}
+	if !IsURL("https://www.example.com") {
+		t.Fatal("IsURL failed: https://www.example.com")
+	}
+	if IsURL("adir/afile") || IsURL("http:/ /afile") || IsURL("http:/a/file") {
+		t.Fatal("IsURL recognized non-url")
 	}
 }

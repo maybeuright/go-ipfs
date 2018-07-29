@@ -7,22 +7,22 @@ import (
 	"io"
 	"time"
 
-	bserv "github.com/ipfs/go-ipfs/blockservice"
 	cmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
 	corerepo "github.com/ipfs/go-ipfs/core/corerepo"
-	offline "github.com/ipfs/go-ipfs/exchange/offline"
-	dag "github.com/ipfs/go-ipfs/merkledag"
 	path "github.com/ipfs/go-ipfs/path"
 	resolver "github.com/ipfs/go-ipfs/path/resolver"
 	pin "github.com/ipfs/go-ipfs/pin"
-	"github.com/ipfs/go-ipfs/thirdparty/verifcid"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
+	bserv "gx/ipfs/QmNqRBAhovtf4jVd5cF7YvHaFSsQHHZBaUFwGQWPM2CV7R/go-blockservice"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
-	u "gx/ipfs/QmNiJuT8Ja3hMVpBHXv3Q6dwmperaQ6JjLtpMQgMCD7xvx/go-ipfs-util"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
+	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
+	"gx/ipfs/QmQwgv79RHrRnoXmhnpC1BPtY55HHeneGMpPwmmBU1fUAG/go-verifcid"
+	offline "gx/ipfs/QmS6mo1dPpHdYsVkm27BRZDLxpKBCiJKUH8fHX15XFfMez/go-ipfs-exchange-offline"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 var PinCmd = &cmds.Command{
@@ -297,7 +297,7 @@ Example:
 		switch typeStr {
 		case "all", "direct", "indirect", "recursive":
 		default:
-			err = fmt.Errorf("Invalid type '%s', must be one of {direct, indirect, recursive, all}", typeStr)
+			err = fmt.Errorf("invalid type '%s', must be one of {direct, indirect, recursive, all}", typeStr)
 			res.SetError(err, cmdkit.ErrClient)
 			return
 		}
@@ -305,9 +305,9 @@ Example:
 		var keys map[string]RefKeyObject
 
 		if len(req.Arguments()) > 0 {
-			keys, err = pinLsKeys(req.Arguments(), typeStr, req.Context(), n)
+			keys, err = pinLsKeys(req.Context(), req.Arguments(), typeStr, n)
 		} else {
-			keys, err = pinLsAll(typeStr, req.Context(), n)
+			keys, err = pinLsAll(req.Context(), typeStr, n)
 		}
 
 		if err != nil {
@@ -447,7 +447,7 @@ var verifyPinCmd = &cmds.Command{
 		quiet, _, _ := res.Request().Option("quiet").Bool()
 
 		if verbose && quiet {
-			res.SetError(fmt.Errorf("The --verbose and --quiet options can not be used at the same time"), cmdkit.ErrNormal)
+			res.SetError(fmt.Errorf("the --verbose and --quiet options can not be used at the same time"), cmdkit.ErrNormal)
 		}
 
 		opts := pinVerifyOpts{
@@ -492,7 +492,7 @@ type RefKeyList struct {
 	Keys map[string]RefKeyObject
 }
 
-func pinLsKeys(args []string, typeStr string, ctx context.Context, n *core.IpfsNode) (map[string]RefKeyObject, error) {
+func pinLsKeys(ctx context.Context, args []string, typeStr string, n *core.IpfsNode) (map[string]RefKeyObject, error) {
 
 	mode, ok := pin.StringToMode(typeStr)
 	if !ok {
@@ -539,7 +539,7 @@ func pinLsKeys(args []string, typeStr string, ctx context.Context, n *core.IpfsN
 	return keys, nil
 }
 
-func pinLsAll(typeStr string, ctx context.Context, n *core.IpfsNode) (map[string]RefKeyObject, error) {
+func pinLsAll(ctx context.Context, typeStr string, n *core.IpfsNode) (map[string]RefKeyObject, error) {
 
 	keys := make(map[string]RefKeyObject)
 
@@ -557,7 +557,7 @@ func pinLsAll(typeStr string, ctx context.Context, n *core.IpfsNode) (map[string
 	if typeStr == "indirect" || typeStr == "all" {
 		set := cid.NewSet()
 		for _, k := range n.Pinning.RecursiveKeys() {
-			err := dag.EnumerateChildren(n.Context(), dag.GetLinksWithDAG(n.DAG), k, set.Visit)
+			err := dag.EnumerateChildren(ctx, dag.GetLinksWithDAG(n.DAG), k, set.Visit)
 			if err != nil {
 				return nil, err
 			}
@@ -647,7 +647,11 @@ func pinVerify(ctx context.Context, n *core.IpfsNode, opts pinVerifyOpts) <-chan
 		for _, cid := range recPins {
 			pinStatus := checkPin(cid)
 			if !pinStatus.Ok || opts.includeOk {
-				out <- &PinVerifyRes{cid.String(), pinStatus}
+				select {
+				case out <- &PinVerifyRes{cid.String(), pinStatus}:
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
